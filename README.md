@@ -117,4 +117,8 @@ Syntax analyzer defined in [`parser/SyntaxAnalyzer.h`](parser/SyntaxAnalyzer.h) 
 
 ### Visualisation
 
+Visualizer is based on `graphviz`, defined in [`visualizer/main.cpp`](visualizer/main.cpp) file.
+
 ### Tests
+
+Tests are located in [`tests/`](`tests/`).
