@@ -54,6 +54,7 @@ Nonterminals description:
 ### Grammar transformation
 
 Defined grammar have left recursion, so we need to elliminate that.
+
 $$
 \begin{align*}
 E  &\longrightarrow X E'                  \\
