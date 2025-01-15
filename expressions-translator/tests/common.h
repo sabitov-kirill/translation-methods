@@ -20,5 +20,5 @@ inline void checkExpression(const std::string &input,
   ASSERT_TRUE(context.getResult());
 
   EXPECT_EQ(*context.getResult(),
-            assumeMain ? "fn main() {\n" + expected + ";\n}\n" : expected);
+            assumeMain ? "fn main() {\n  " + expected + ";\n}\n" : expected);
 }
