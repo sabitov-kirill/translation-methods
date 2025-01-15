@@ -8,30 +8,40 @@
 #include "LexicalAnalyzer.h"
 #include "Parser.tab.h"
 
-enum class InputMode { Console, File };
+enum class DataMode { Console, File };
 
 int main(int argc, char *argv[]) {
   const char *program_name = argc > 0 ? argv[0] : "translator";
-  if (argc < 1 || argc > 2) {
+  if (argc < 1 || argc > 3) {
     std::cerr << "Wrong arguments count. Usage: " << program_name
-              << "[input file]" << std::endl;
+              << " [input file] [output file]" << std::endl;
     return EXIT_FAILURE;
   }
 
-  auto mode = argc == 2 ? InputMode::File : InputMode::Console;
-  auto in = mode == InputMode::Console
+  auto input_mode = argc >= 2 ? DataMode::File : DataMode::Console;
+  auto output_mode = argc == 3 ? DataMode::File : DataMode::Console;
+
+  auto in = input_mode == DataMode::Console
                 ? std::unique_ptr<std::ifstream>()
                 : std::make_unique<std::ifstream>(argv[1]);
 
-  auto context = mode == InputMode::Console
+  auto out = output_mode == DataMode::Console
+                 ? std::unique_ptr<std::ofstream>()
+                 : std::make_unique<std::ofstream>(argv[2]);
+
+  auto context = input_mode == DataMode::Console
                      ? book::Context{}
                      : book::Context{std::filesystem::absolute(argv[1])};
   book::LexicalAnalyzer lexer(in.get(), context);
   book::Parser parser(context, lexer);
 
   int result = parser();
-  if (auto result = context.getResult(); result) {
-    std::cout << *result;
+  if (auto parsed_result = context.getResult(); parsed_result) {
+    if (output_mode == DataMode::Console) {
+      std::cout << *parsed_result;
+    } else {
+      *out << *parsed_result;
+    }
   }
 
   return result;
