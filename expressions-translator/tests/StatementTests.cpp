@@ -5,8 +5,7 @@ TEST(Statements, VariableDeclaration) {
 }
 
 TEST(Statements, Assignment) {
-  checkExpression("let x = 5",
-                  "fn main() {\nlet mut x = 5;\n}\n", false);
+  checkExpression("let x = 5", "fn main() {\nlet mut x = 5;\n}\n", false);
   checkExpression("let x = 5 x = 10",
                   "fn main() {\nlet mut x = 5;\nx = 10;\n}\n", false);
 }
@@ -34,8 +33,8 @@ TEST(Statements, IfStatement) {
 
 TEST(Statements, IfElseStatement) {
   checkExpression("if == 1 2 { println 42 } else { println 43 }",
-                  "fn main() {\nif (1 == 2) {\nprintln!(\"{}\", 42);\n} else "
-                  "{\nprintln!(\"{}\", 43);\n}\n}\n",
+                  "fn main() {\nif (1 == 2) {\nprintln!(\"{}\", 42);\n}\n"
+                  "else {\nprintln!(\"{}\", 43);\n}\n}\n",
                   false);
 }
 
@@ -45,9 +44,17 @@ TEST(Statements, ComplexProgram) {
                   "let mut x = 5;\n"
                   "if (x == 5) {\n"
                   "println!(\"{}\", x);\n"
-                  "} else {\n"
+                  "}\n"
+                  "else {\n"
                   "print!(\"{}\", 0);\n"
                   "}\n"
+                  "}\n",
+                  false);
+
+  checkExpression("if > 2 3 print 3 if > 4 - 7 2 print + 3 4",
+                  "fn main() {\n"
+                  "if (2 > 3) print!(\"{}\", 3);\n"
+                  "else if (4 > (7 - 2)) print!(\"{}\", (3 + 4));\n"
                   "}\n",
                   false);
 }

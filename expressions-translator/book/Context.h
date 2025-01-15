@@ -1,7 +1,8 @@
 #pragma once
-#include "location.hh"
 #include <optional>
 #include <string>
+
+#include "location.hh"
 
 namespace book {
 
