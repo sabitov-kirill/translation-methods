@@ -12,7 +12,7 @@ enum class DataMode { Console, File };
 
 int main(int argc, char *argv[]) {
   const char *program_name = argc > 0 ? argv[0] : "translator";
-  if (argc < 1 || argc > 3) {
+  if (argc < 1 || argc > 4) {
     std::cerr << "Wrong arguments count. Usage: " << program_name
               << " [input file] [output file]" << std::endl;
     return EXIT_FAILURE;
