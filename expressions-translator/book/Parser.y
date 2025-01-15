@@ -72,13 +72,14 @@ code_block:
 
 stmt:
   expr                           { $$ = $1 + ";\n"; }
-  | LET ID '=' expr              { $$ = "let mut " + $2 + " = " + $4 + ";\n"; }
+  | LET ID '=' expr              { context.addVariable($2);
+                                   $$ = "let mut " + $2 + " = " + $4 + ";\n"; }
   | ID '=' expr                  { $$ = $1 + " = " + $3 + ";\n"; }
   | PRINT expr                   { $$ = "print!(\"{}\", " + $2 + ");\n"; }
   | PRINTLN expr                 { $$ = "println!(\"{}\", " + $2 + ");\n"; }
   | READ ID                      { $$ = "let mut line = String::new();\n"
-                                      "std::io::stdin().read_line(&mut line).unwrap();\n"
-                                      "let " + $2 + " = line.trim().parse().unwrap();\n"; }
+                                      "std::io::stdin().read_line(&mut line).unwrap();\n" +
+                                    $2 + " = line.trim().parse().unwrap();\n"; }
   | IF expr code_block           { $$ = makeIf($2, $3); }
   | IF expr code_block
             code_block           { $$ = makeIf($2, $3, $4); }
@@ -111,7 +112,8 @@ expr:
 
 primary:
   NUM                            { $$ = $1; }
-  | ID                           { $$ = $1; }
+  | ID                           { if (!context.hasVariable($1)) error(@1, "Undefined variable: " + $1);
+                                   $$ = $1; }
   ;
 %%
 
@@ -123,19 +125,22 @@ void book::Parser::error(const location &loc, const std::string &message) {
   }
   std::ifstream sourceFile(*loc.begin.filename);
   std::string line;
-  for (int lineNum = 1; lineNum <= loc.end.line; ++lineNum) {
+  for (int lineNum = 1; lineNum < loc.end.line; ++lineNum) {
     if (!std::getline(sourceFile, line)) {
       break;
     }
 
-    if (lineNum >= loc.begin.line) {
+    if (lineNum >= loc.begin.line - 1) {
       std::cerr << "    " << line << '\n';
       
-      if (lineNum == loc.begin.line) {
+      if (lineNum == loc.begin.line - 1) {
         const int indent = loc.begin.column - 1;
+        const int length = (lineNum == loc.end.line - 1) 
+            ? loc.end.column - loc.begin.column - 1
+            : line.length() - indent - 1;
         std::cerr 
             << "    "  << std::string(indent, ' ') 
-            << '^' << std::string(line.length() - indent - 1, '~') << '\n';
+            << '^' << std::string(length, '~') << '\n';
       }
     }
   }
