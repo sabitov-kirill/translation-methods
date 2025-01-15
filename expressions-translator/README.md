@@ -1,5 +1,7 @@
 # Expressions Translator
 
+My little `book` language translator to `rust`.
+
 ## Build
 
 ```sh
