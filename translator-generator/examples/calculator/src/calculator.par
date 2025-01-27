@@ -1,0 +1,39 @@
+%header {
+#include <iostream>
+#include <cmath>
+}
+
+%tokens {
+  NUMBER: double;
+  PLUS;      // +
+  MINUS;     // -
+  MULT;      // *
+  DIV;       // /
+  MOD;       // %
+  LPAREN;    // (
+  RPAREN;    // )
+}
+
+%grammar {
+  E(): double -> T EPrime($1) { $$ = $2; }
+  ;
+
+  EPrime(double acc): double -> PLUS T EPrime(acc + $2) { $$ = $3; }
+  | MINUS T EPrime(acc - $2) { $$ = $3; }
+  | { $$ = acc; }
+  ;
+
+  T(): double -> F TPrime($1) { $$ = $2; }
+  ;
+
+  TPrime(double acc): double -> MULT F TPrime(acc * $2) { $$ = $3; }
+  | DIV F TPrime(acc / $2) { $$ = $3; }
+  | MOD F TPrime(fmod(acc, $2)) { $$ = $3; }
+  | { $$ = acc; }
+  ;
+
+  F(): double -> MINUS F { $$ = -$2; }
+  | LPAREN E RPAREN { $$ = $2; }
+  | NUMBER { $$ = $1; }
+  ;
+}

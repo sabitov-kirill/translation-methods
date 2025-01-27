@@ -39,4 +39,3 @@ endfunction()
 
 
 add_subdirectory(examples/calculator)
-add_subdirectory(examples/logical-expressions)
