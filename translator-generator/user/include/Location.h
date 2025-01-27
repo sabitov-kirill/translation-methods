@@ -37,7 +37,8 @@ private: /* Private Data */
 
 template <typename SourceFileT = std::filesystem::file_type> class Location {
 public: /* Constructor and destructor */
-  Location() = default;
+  Location(std::optional<SourceFileT> f = {})
+      : start_(0, 0, f), end_(0, 0, f) {}
   Location(Position<SourceFileT> start, Position<SourceFileT> end)
       : start_(start), end_(end) {}
 
