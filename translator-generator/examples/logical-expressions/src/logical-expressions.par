@@ -1,0 +1,60 @@
+%header {
+#include <string>
+#include <vector>
+#include <iostream>
+
+template <typename Meta = std::string> struct ASTNode {
+  using Children = std::vector<ASTNode>;
+  Meta data;
+  Children children;
+};
+using NameASTNode = ASTNode<>;
+}
+
+%tokens {
+  ID: std::string;
+  OR;
+  XOR;
+  AND;
+  NOT;
+  IN;
+  LPAREN;
+  RPAREN;
+}
+
+%grammar {
+  E(): NameASTNode -> X EPrime { $$ = {"E", {$1, $2}}; };
+  EPrime(): NameASTNode -> OR X EPrime { $$ = {"or", {$2, $3}}; }
+  | { $$ = NameASTNode{"EPrime"}; }
+  ;
+
+  X(): NameASTNode -> T XPrime { $$ = {"X", {$1, $2}}; };
+  XPrime(): NameASTNode -> XOR T XPrime { $$ = {"xor", {$2, $3}}; }
+  | { $$ = NameASTNode{"XPrime"}; }
+  ;
+
+  T(): NameASTNode -> N TPrime { $$ = {"T", {$1, $2}}; };
+  TPrime(): NameASTNode -> AND N TPrime { $$ = {"and", {$2, $3}}; }
+  | { $$ = NameASTNode{"TPrime"}; }
+  ;
+
+  N(): NameASTNode -> NOT N { $$ = NameASTNode{"not", {$2}}; }
+  | M { $$ = {"N", {$1}}; }
+  ;
+
+  M(): NameASTNode -> F MPrime { $$ = {"M", {$1, $2}}; };
+  MPrime(): NameASTNode -> IN S MPrime { 
+    $$ = {"in", {$2, $3}}; 
+  }
+  | NOT IN S MPrime { 
+    $$ = {"not in", {$3, $4}}; 
+  }
+  | { $$ = NameASTNode{"MPrime"}; }
+  ;
+
+  F(): NameASTNode -> LPAREN E RPAREN { $$ = $2; }
+  | ID { $$ = NameASTNode{$1}; }
+  ;
+
+  S(): NameASTNode -> ID { $$ = NameASTNode{$1}; };
+}
