@@ -77,9 +77,9 @@ stmt:
   | ID '=' expr                  { $$ = $1 + " = " + $3 + ";\n"; }
   | PRINT expr                   { $$ = "print!(\"{}\", " + $2 + ");\n"; }
   | PRINTLN expr                 { $$ = "println!(\"{}\", " + $2 + ");\n"; }
-  | READ ID                      { $$ = "let mut line = String::new();\n"
-                                      "std::io::stdin().read_line(&mut line).unwrap();\n" +
-                                    $2 + " = line.trim().parse().unwrap();\n"; }
+  | ID '=' READ                  { $$ = "let mut line = String::new();\n"
+                                   "std::io::stdin().read_line(&mut line).unwrap();\n"
+                                   "let mut " + $1 + " = line.trim().parse().unwrap();\n"; }
   | IF expr code_block           { $$ = makeIf($2, $3); }
   | IF expr code_block
             code_block           { $$ = makeIf($2, $3, $4); }

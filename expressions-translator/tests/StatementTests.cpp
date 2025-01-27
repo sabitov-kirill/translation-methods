@@ -26,10 +26,10 @@ TEST(Statements, PrintStatements) {
 }
 
 TEST(Statements, ReadStatement) {
-  checkExpression("read x",
+  checkExpression("x = read",
                   "fn main() {\n  let mut line = String::new();\n"
                   "  std::io::stdin().read_line(&mut line).unwrap();\n"
-                  "  let x = line.trim().parse().unwrap();\n}\n",
+                  "  let mut x = line.trim().parse().unwrap();\n}\n",
                   false);
 }
 
