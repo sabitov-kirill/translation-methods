@@ -30,7 +30,7 @@ int main(int argc, char *argv[]) {
   }
 
   // Generate lexer
-  trg::LexerGenerator generator(&input, &output, inputPath);
+  trg::lg::LexerGenerator generator(&input, &output, inputPath);
   generator.generate();
 
   return 0;

@@ -3,19 +3,20 @@
 
 %define api.token.constructor
 %define api.value.type variant
-%define api.namespace {trg}
+%define api.namespace {trg::lg}
 %define api.parser.class {InputParser}
-%parse-param {class InputParseContext &context}
+%parse-param {class InputParseContext &parseContext}
 %parse-param {class InputLexicalAnalyzer &lexer}
 
 %code requires {
 #include <iostream>
 
 #include "InputParseContext.h"
-using Rule = trg::Rule;
+using Rule = trg::lg::Rule;
 }
 
 %code {
+
 #include <iostream>
 #include <fstream>
 #include <string>
@@ -29,6 +30,7 @@ using namespace std;
 #define yylex lexer.get
 }
 
+%token CLASSNAME_DIRECTIVE
 %token HEADER_START RULES_START PATTERN_EOF
 %token <std::string> CODE PATTERN_CHAR_SEQUENCE PATTERN_REGEX ACTION
 %token               END 0
@@ -37,20 +39,31 @@ using namespace std;
 %type <Rule::SpecialPattern> special_pattern 
 %type <std::variant<Rule::RegexPattern, Rule::SpecialPattern>> pattern
 %type <Rule> rule
+%token <std::string> CLASS_NAME
 
 %%
 
-input: header_section rules_section
+input: directives header_section rules_section
      ;
 
-header_section: HEADER_START CODE     { context.setHeader($2); }
-              | HEADER_START          { context.setHeader(""); }
+directives: directives directive
+          | /* empty */
+          ;
+
+directive: classname_directive
+         ;
+
+classname_directive: CLASSNAME_DIRECTIVE CLASS_NAME { parseContext.setClassName($2); }
+                  ;
+
+header_section: HEADER_START CODE     { parseContext.setHeader($2); }
+              | HEADER_START          { parseContext.setHeader(""); }
               ;
 
 rules_section: RULES_START rules_list
              ;
 
-rules_list: rules_list  rule   { context.addRule(std::move($2)); }
+rules_list: rules_list  rule   { parseContext.addRule(std::move($2)); }
           | /* empty */
           ;
 
@@ -70,7 +83,7 @@ special_pattern: PATTERN_EOF  { $$ = Rule::SpecialPattern::END_OF_FILE; }
 
 %%
 
-void trg::InputParser::error(const location &loc, const std::string &message) {
+void trg::lg::InputParser::error(const location &loc, const std::string &message) {
   std::cerr << loc << ": error: " << message << '\n';
 
   if (!loc.begin.filename) {
@@ -83,19 +96,17 @@ void trg::InputParser::error(const location &loc, const std::string &message) {
     if (!std::getline(sourceFile, line)) {
       break;
     }
-
-    if (lineNum >= loc.begin.line - 1) {
-      std::cerr << "    " << line << '\n';
-
-      if (lineNum == loc.begin.line - 1) {
-        const int indent = loc.begin.column - 1;
-        const int length = (lineNum == loc.end.line - 1) 
-            ? loc.end.column - loc.begin.column - 1
-            : line.length() - indent - 1;
-        std::cerr 
-            << "    "  << std::string(indent, ' ') 
-            << '^' << std::string(length, '~') << '\n';
-      }
+    std::cout << "    " << line << '\n' << "    ";
+    if (lineNum == loc.begin.line) {
+      for (int i = 1; i < loc.begin.column; ++i) std::cout << ' ';
+      for (size_t i = loc.begin.column; i <= line.length(); ++i) std::cout << '~';
+      std::cout << '\n';
+    } else if (lineNum == loc.end.line) {
+      for (int i = 1; i < loc.end.column; ++i) std::cout << '~';
+      std::cout << '\n';
+    } else {
+      for (size_t i = 1; i <= line.length(); ++i) std::cout << '~';
+      std::cout << '\n';
     }
   }
 

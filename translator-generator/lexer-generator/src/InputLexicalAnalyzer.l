@@ -1,68 +1,84 @@
-%option c++ noyywrap yyclass="trg::InputLexicalAnalyzer"
+%option c++ noyywrap yyclass="trg::lg::InputLexicalAnalyzer" yylineno
 %{
 #include "InputParseContext.h"
 #include "InputLexicalAnalyzer.h"
 #include "InputParser.tab.h"
 #include "location.hh"
 
-#define YY_USER_ACTION loc.columns(yyleng);
-
-using namespace trg;
-
+#undef BEGIN
+#define BEGIN(state) \
+  ((InputLexicalAnalyzer*)this)->prevStart = (yy_start); \
+  (yy_start) = 1 + 2 * (state)
+#define YY_USER_ACTION  \
+    { \
+        location &loc = context.getLexerLocation(); \
+        loc.begin.column = loc.end.column; \
+        loc.begin.line = yylineno; \
+        for(int i = 0; yytext[i] != '\0'; i++) { \
+            if(yytext[i] == '\n') { \
+                loc.end.line++; \
+                loc.end.column = 1; \
+            } else { \
+                loc.end.column++; \
+            } \
+        } \
+    }
+using namespace trg::lg;
 %}
 
-%x CODE_BLOCK
-%x PATTERN_BLOCK
-%x RULES_STATE
+%x HEADER_BLOCK_STATE
+%x RULES_BLOCK_STATE
+%x CODE_BLOCK 
+%x RULES_BLOCK
+%x CLASSNAME_STATE
 
 %%
-%{
-  location &loc = context.getLexerLocation();
-  loc.step();
+%{ location &loc = context.getLexerLocation(); 
 %}
 
-"%header"            { BEGIN(PATTERN_BLOCK); return InputParser::make_HEADER_START(loc); }
-"%rules"             { BEGIN(RULES_STATE); return InputParser::make_RULES_START(loc);  }
-"EOF"                { return InputParser::make_PATTERN_EOF(loc); }
-<<EOF>>              { return InputParser::make_END(loc);}
+<INITIAL>"%header"      { BEGIN(HEADER_BLOCK_STATE); return InputParser::make_HEADER_START(loc); }
+<INITIAL>"%rules"       { BEGIN(RULES_BLOCK_STATE); return InputParser::make_RULES_START(loc);  }
+<INITIAL>"%classname"   { BEGIN(CLASSNAME_STATE); return InputParser::make_CLASSNAME_DIRECTIVE(loc); }
+<<EOF>>                 { return InputParser::make_END(loc);}
 
-<PATTERN_BLOCK>"{"  { BEGIN(CODE_BLOCK);
-                      currentBlock.clear();
-                      braceCount = 1;
-                    }
+
+<HEADER_BLOCK_STATE>"{" { BEGIN(INITIAL);
+                          BEGIN(CODE_BLOCK);
+                          currentBlock.clear();
+                          prevBraceCount = braceCount++;
+                        }
+
+<RULES_BLOCK_STATE>"{"  { BEGIN(RULES_BLOCK); }
+
+<RULES_BLOCK>"\""[^\"]*"\"" { std::string text(yytext + 1, yyleng - 2);
+                              return InputParser::make_PATTERN_CHAR_SEQUENCE(text, loc); 
+                            }
+<RULES_BLOCK>"/"[^/]*"/"    { std::string text(yytext + 1, yyleng - 2); 
+                              return InputParser::make_PATTERN_REGEX(text, loc);
+                            }
+<RULES_BLOCK>"EOF"          { return InputParser::make_PATTERN_EOF(loc); }
+<RULES_BLOCK>"{"            { BEGIN(RULES_BLOCK);
+                              BEGIN(CODE_BLOCK);
+                              currentBlock.clear();
+                              prevBraceCount = braceCount++;
+                            }
+<RULES_BLOCK>"}"            { BEGIN(INITIAL); }
 
 <CODE_BLOCK>"{"     { currentBlock += yytext;
                       braceCount++; 
                     }
-
 <CODE_BLOCK>"}"     { braceCount--;
-                      if (braceCount == 0) {
-                        BEGIN(wasRules ? RULES_STATE : INITIAL);
+                      if (braceCount == prevBraceCount) {
+                        yy_start = prevStart;
                         return InputParser::make_CODE(currentBlock, loc);
                       }
                       currentBlock += yytext;
                     }
+<CODE_BLOCK>[^{}]+  { currentBlock += yytext; }
 
-<CODE_BLOCK>[^{}]+   { currentBlock += yytext; }
+<CLASSNAME_STATE>[A-Za-z_][A-Za-z0-9_]* { BEGIN(INITIAL); return InputParser::make_CLASS_NAME(yytext, loc); }
 
-<RULES_STATE>"\""[^\"]*"\"" { std::string text(yytext + 1, yyleng - 2);
-                              return InputParser::make_PATTERN_CHAR_SEQUENCE(text, loc); 
-                            }
-
-<RULES_STATE>"/"[^/]*"/"    { std::string text(yytext + 1, yyleng - 2); 
-                              return InputParser::make_PATTERN_REGEX(text, loc);
-                            }
-
-<RULES_STATE>"EOF"          { return InputParser::make_PATTERN_EOF(loc); }
-
-<RULES_STATE>"{"            { BEGIN(CODE_BLOCK);
-                              currentBlock.clear();
-                              braceCount = wasRules = 1;
-                            }
-
-[ \t]+              { loc.step(); }
-[\n]+               { loc.lines(yyleng); loc.step(); }
-
-.                   { throw InputParser::syntax_error(loc, std::string("invalid character: ") + yytext); }
+[ \t\n]+ ;
+.        { throw InputParser::syntax_error(loc, std::string("invalid character: ") + yytext); }
 
 %%

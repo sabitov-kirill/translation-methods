@@ -1,11 +1,11 @@
-#include "LexerGenerator.h"
+#include <stdexcept>
+
 #include "InputLexicalAnalyzer.h"
 #include "InputParseContext.h"
 #include "InputParser.tab.h"
+#include "LexerGenerator.h"
 
-#include <stdexcept>
-
-using namespace trg;
+using namespace trg::lg;
 
 void LexerGenerator::generate() {
   InputParseContext context;
@@ -22,55 +22,40 @@ void LexerGenerator::generate() {
   const std::string &header = context.getHeader();
   const std::vector<Rule> &rules = context.getRules();
 
-  *out << "#include <regex>\n"
+  *out << "#pragma once\n\n"
+       << "#include <regex>\n"
        << "#include <string>\n"
-       << "#include <vector>\n\n"
-       << "#include <LexerBase.h>\n\n";
+       << "#include <string_view>\n\n";
   if (!header.empty()) {
     *out << header << "\n\n";
   }
 
-  *out << "enum class Token {\n"
-       << "    ERROR,\n"
-       << "    END,\n";
-
-  size_t tokenId = 2;
-  for (const Rule &rule : rules) {
-    *out << "    TOKEN_" << tokenId++ << ",\n";
-  }
-  *out << "};\n\n";
-
-  *out << "class GeneratedLexer : public trg::LexerMixin<Token> {\n"
-       << "public:\n"
-       << "    using LexerMixin::LexerMixin;\n\n"
-       << "    Token nextToken() override {\n"
-       << "        if (!in) return Token::END;\n\n"
-       << "        std::string line;\n"
-       << "        if (!std::getline(*in, line)) return Token::END;\n\n"
-       << "        currentLocation.lines(1);\n\n";
+  *out << "Token " << context.getClassName() << "::nextToken() {\n"
+       << "  if (isEof()) {\n    return Token(TokenType::END);\n  }\n\n";
 
   for (const Rule &rule : rules) {
-    *out << "        {\n";
+    *out << "  {\n";
     if (std::holds_alternative<Rule::RegexPattern>(rule.pattern)) {
       const auto &pattern = std::get<Rule::RegexPattern>(rule.pattern);
-      *out << "            static const std::regex pattern(R\"(" << pattern.body
-           << ")\");\n"
-           << "            std::smatch match;\n"
-           << "            if (std::regex_search(line, match, pattern)) {\n"
-           << "                " << rule.action << "\n"
-           << "            }\n";
+      *out << "    static const std::regex pattern(R\"(" << pattern.body
+           << ")\", std::regex::multiline);\n"
+           << "    auto match = matchPattern(pattern);\n"
+           << "    if (match.success) {\n"
+           << "      updateLocation(match.matched);\n"
+           << "      " << rule.action << "\n"
+           << "    }\n";
     } else if (std::holds_alternative<Rule::SpecialPattern>(rule.pattern)) {
       const auto &special = std::get<Rule::SpecialPattern>(rule.pattern);
       if (special == Rule::SpecialPattern::END_OF_FILE) {
-        *out << "            if (in->eof()) {\n"
-             << "                " << rule.action << "\n"
-             << "            }\n";
+        *out << "    if (isEof()) {\n"
+             << "      " << rule.action << "\n"
+             << "    }\n";
       }
     }
-    *out << "        }\n";
+    *out << "  }\n";
   }
 
-  *out << "        return Token::ERROR;\n"
-       << "    }\n"
-       << "};\n";
+  *out << "  lexerError(\"Unexpected character: \" + std::string(1, "
+          "getRemainingInput()[0]));\n"
+       << "}\n";
 }

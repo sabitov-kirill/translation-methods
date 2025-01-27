@@ -4,12 +4,13 @@
 #include <ostream>
 #include <string>
 
-namespace trg {
+namespace trg::lg {
 
 class LexerGenerator {
 public: /* Constructors and Destructors */
-  LexerGenerator(std::istream *in, std::ostream *out, const std::string &filepath = "") 
-    : in(in), out(out), filepath(filepath) {}
+  LexerGenerator(std::istream *in, std::ostream *out,
+                 const std::string &filepath = "")
+      : in(in), out(out), filepath(filepath) {}
 
 public: /* Public API */
   void generate();
