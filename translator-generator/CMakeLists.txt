@@ -3,8 +3,9 @@ project(trgpp)
 
 set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_SCAN_FOR_MODULES OFF)
-find_package(GTest REQUIRED)
+include(CTest)
 enable_testing()
+find_package(GTest REQUIRED)
 
 add_subdirectory(lexer-generator)
 add_subdirectory(parser-generator)
