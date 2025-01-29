@@ -4,6 +4,7 @@
 #include <regex>
 #include <set>
 #include <sstream>
+#include <stdexcept>
 
 #include "GrammarAnalyzer.h"
 #include "InputLexicalAnalyzer.h"
@@ -16,7 +17,7 @@ void ParserGenerator::generate() {
   InputLexicalAnalyzer lexer(in, context);
   InputParser parser(context, lexer);
 
-  parser.set_debug_level(0);
+  parser.set_debug_level(1);
   if (parser.parse() != 0) {
     throw std::runtime_error("Failed to parse input grammar");
   }
@@ -64,6 +65,12 @@ void ParserGenerator::generate() {
 
     std::cout << "\nLeft Recursion in Original Grammar: "
               << analyzer.leftRecursion() << '\n';
+    std::cout << "Left Factoring in Original Grammar: "
+              << analyzer.leftFactoring() << '\n';
+  }
+
+  if (analyzer.leftRecursion() || analyzer.leftFactoring()) {
+    throw std::runtime_error("Input grammar is not LL1");
   }
 
   *out << "#pragma once\n\n"

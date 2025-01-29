@@ -6,7 +6,7 @@
 using namespace trg::pg;
 
 namespace {
-// Helper function to create a Production with symbols
+
 Production makeProduction(
     std::initializer_list<std::pair<std::string, std::string>> symbolPairs) {
   Production prod;
@@ -15,6 +15,7 @@ Production makeProduction(
   }
   return prod;
 }
+
 } // namespace
 
 TEST(GrammarChecks, DirectLeftRecursion) {
@@ -32,19 +33,131 @@ TEST(GrammarChecks, DirectLeftRecursion) {
   EXPECT_TRUE(analyzer.leftRecursion());
 }
 
-TEST(GrammarChecks, NoLeftRecursion) {
-  InputParseContext context;
-  GrammarRule rule;
-  rule.nonTerminal = "E";
-
-  rule.productions.push_back(makeProduction({{"T", ""}, {"+", ""}, {"E", ""}}));
-  rule.productions.push_back(makeProduction({{"T", ""}}));
-
-  context.addRule(std::move(rule));
-
+TEST(GrammarChecks, DetectsDirectLeftRecursion) {
   GrammarAnalyzer analyzer;
+  InputParseContext context;
+
+  // A → A b | c
+  GrammarRule rule;
+  rule.nonTerminal = "A";
+
+  Production p1;
+  p1.symbols = {{"A"}, {"b"}};
+
+  Production p2;
+  p2.symbols = {{"c"}};
+
+  rule.productions = {p1, p2};
+  context.setRules({rule});
+
+  analyzer.analyze(context);
+  EXPECT_TRUE(analyzer.leftRecursion());
+}
+
+TEST(GrammarChecks, NoLeftRecursion) {
+  GrammarAnalyzer analyzer;
+  InputParseContext context;
+
+  // A → b A | c
+  GrammarRule rule;
+  rule.nonTerminal = "A";
+
+  Production p1;
+  p1.symbols = {{"b"}, {"A"}};
+
+  Production p2;
+  p2.symbols = {{"c"}};
+
+  rule.productions = {p1, p2};
+  context.setRules({rule});
+
   analyzer.analyze(context);
   EXPECT_FALSE(analyzer.leftRecursion());
+}
+
+TEST(GrammarChecks, DetectsLeftFactoring) {
+  GrammarAnalyzer analyzer;
+  InputParseContext context;
+
+  // A → abc d | abc e
+  GrammarRule rule;
+  rule.nonTerminal = "A";
+
+  Production p1;
+  p1.symbols = {{"abc"}, {"d"}};
+
+  Production p2;
+  p2.symbols = {{"abc"}, {"e"}};
+
+  rule.productions = {p1, p2};
+  context.setRules({rule});
+
+  analyzer.analyze(context);
+  EXPECT_TRUE(analyzer.leftFactoring());
+}
+
+TEST(GrammarChecks, NoLeftFactoring) {
+  GrammarAnalyzer analyzer;
+  InputParseContext context;
+
+  // A → abc | def
+  GrammarRule rule;
+  rule.nonTerminal = "A";
+
+  Production p1;
+  p1.symbols = {{"abc"}};
+
+  Production p2;
+  p2.symbols = {{"def"}};
+
+  rule.productions = {p1, p2};
+  context.setRules({rule});
+
+  analyzer.analyze(context);
+  EXPECT_FALSE(analyzer.leftFactoring());
+}
+
+TEST(GrammarChecks, EmptyProductionsNoFactoring) {
+  GrammarAnalyzer analyzer;
+  InputParseContext context;
+
+  // A → ε | b
+  GrammarRule rule;
+  rule.nonTerminal = "A";
+
+  Production p1;
+  Production p2;
+  p2.symbols = {{"b"}};
+
+  rule.productions = {p1, p2};
+  context.setRules({rule});
+
+  analyzer.analyze(context);
+  EXPECT_FALSE(analyzer.leftFactoring());
+}
+
+TEST(GrammarChecks, MultipleRulesLeftRecursion) {
+  GrammarAnalyzer analyzer;
+  InputParseContext context;
+
+  // A → A b | c
+  // B → B a | d
+  GrammarRule rule1, rule2;
+  rule1.nonTerminal = "A";
+  rule2.nonTerminal = "B";
+
+  Production p1, p2, p3, p4;
+  p1.symbols = {{"A"}, {"b"}};
+  p2.symbols = {{"c"}};
+  p3.symbols = {{"B"}, {"a"}};
+  p4.symbols = {{"d"}};
+
+  rule1.productions = {p1, p2};
+  rule2.productions = {p3, p4};
+  context.setRules({rule1, rule2});
+
+  analyzer.analyze(context);
+  EXPECT_TRUE(analyzer.leftRecursion());
 }
 
 TEST(GrammarChecks, BooleanAlgebraWithLeftRecursion) {

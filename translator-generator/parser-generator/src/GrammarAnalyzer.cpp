@@ -14,6 +14,7 @@ void GrammarAnalyzer::analyze(const InputParseContext &context) {
   calculateFirstSets(context);
   calculateFollowSets(context);
   calculateIsLeftRecursion(context);
+  calculateIsLeftFactoring(context);
 }
 
 void GrammarAnalyzer::calculateFirstSets(const InputParseContext &context) {
@@ -138,6 +139,31 @@ void GrammarAnalyzer::calculateIsLeftRecursion(
       }
     }
   }
+}
+
+void GrammarAnalyzer::calculateIsLeftFactoring(const InputParseContext &context) {
+    isLeftFactoring = false;
+    
+    for (const auto &rule : context.getRules()) {
+        const auto &productions = rule.productions;
+        for (size_t i = 0; i < productions.size(); ++i) {
+            for (size_t j = i + 1; j < productions.size(); ++j) {
+                const auto &prod1 = productions[i];
+                const auto &prod2 = productions[j];
+                size_t commonPrefixLen = 0;
+                while (commonPrefixLen < prod1.symbols.size() && 
+                       commonPrefixLen < prod2.symbols.size() && 
+                       prod1.symbols[commonPrefixLen].name == prod2.symbols[commonPrefixLen].name) {
+                    commonPrefixLen++;
+                }
+                
+                if (commonPrefixLen > 0) {
+                    isLeftFactoring = true;
+                    return;
+                }
+            }
+        }
+    }
 }
 
 const std::string &GrammarAnalyzer::getSymbolType(const std::string &symbol) {

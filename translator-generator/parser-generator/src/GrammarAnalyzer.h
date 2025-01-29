@@ -29,6 +29,7 @@ public:
   const SymbolSetsMap &getFirstSets() const { return firstSets; }
   const SymbolSetsMap &getFollowSets() const { return followSets; }
   bool leftRecursion() const { return isLeftRecursion; }
+  bool leftFactoring() const { return isLeftFactoring; }
 
   bool isTerminal(const std::string &symbol) const { return terminals.contains(symbol); }
   const std::string &getSymbolType(const std::string &symbol);
@@ -37,12 +38,14 @@ private:
   void calculateFirstSets(const InputParseContext &context);
   void calculateFollowSets(const InputParseContext &context);
   void calculateIsLeftRecursion(const InputParseContext &context);
+  void calculateIsLeftFactoring(const InputParseContext &context);
 
   std::unordered_map<std::string, std::string> nonTerminals;
   std::unordered_map<std::string, std::string> terminals;
   SymbolSetsMap firstSets;
   SymbolSetsMap followSets;
   bool isLeftRecursion;
+  bool isLeftFactoring;
 };
 
 } // namespace trg::pg
