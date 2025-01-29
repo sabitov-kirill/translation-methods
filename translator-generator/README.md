@@ -11,7 +11,7 @@ parser generation for easy creation of translators for LL(1) grammars using recu
 + Synthesized Attributes generation
 + Custom [location API](./user/include/Location.h) for showing errors in input files of generated parser
 
-## Your own translator using `trgpp
+## Your own translator using `trgpp`
 
 To create your own translator you need to define:
 
@@ -49,6 +49,8 @@ To create your own translator you need to define:
       // Format: `NONTERMINAL_NAME(ARGUMENTS): RETURN_TYPE -> SYMBOLS | ... ;
     }
     ```
+
+3. Create CMake target using `add_trgpp_target` function, to automatically generate parser with lexer and make them discoverable.
 
 Following implemented examples are very useful when creating your own translator, using `trgpp`:
 
