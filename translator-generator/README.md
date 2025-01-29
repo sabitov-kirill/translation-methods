@@ -34,21 +34,21 @@ To create your own translator you need to define:
 2. Parser configuration file. It has syntax very similar to `GNU Bison`'s, but with
   inherited attributes support:
 
-  ```bison
-  %header {
-  // Any C++ code
-  }
+    ```bison
+    %header {
+    // Any C++ code
+    }
 
-  %tokens {
-    // Tokens definition:                                  `NAME: TYPE;`
-    // Or just type, if your token do not have attributes: `NAME;`
-  }
+    %tokens {
+      // Tokens definition:                                  `NAME: TYPE;`
+      // Or just type, if your token do not have attributes: `NAME;`
+    }
 
-  %grammar {
-    // Place your grammar definition here!
-    // Format: `NONTERMINAL_NAME(ARGUMENTS): RETURN_TYPE -> SYMBOLS | ... ;
-  }
-  ```
+    %grammar {
+      // Place your grammar definition here!
+      // Format: `NONTERMINAL_NAME(ARGUMENTS): RETURN_TYPE -> SYMBOLS | ... ;
+    }
+    ```
 
 Following implemented examples are very useful when creating your own translator, using `trgpp`:
 
